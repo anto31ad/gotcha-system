@@ -2,7 +2,7 @@
 
 a.k.a. `gotcha-system`
 
-## How to run from source
+## Installation
 
 ### Install dependencies
 
@@ -48,7 +48,28 @@ pip install -r requirements.txt
 
 5. you are ready to go!
 
-### What to run, why and how
+## Usage
 
-...
+Make sure you entered the virtual environment you have created earlier with the required packages installed.
 
+Now:
+
+1. Generate fake data by executing
+
+```python
+python generate_logs.py
+```
+
+2. Run the main script
+
+```python
+python src/main.py
+```
+
+3. Unfortunately, that is all there is to see for now!
+
+
+## Other docs
+
+- [Architecture overview](./docs/architecture.md)
+- [Use cases](./docs/use-cases.md)
