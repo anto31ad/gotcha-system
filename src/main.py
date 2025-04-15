@@ -9,10 +9,10 @@ from schema import ProcessedEvent, Event
 
 CONFIG_DIR = Path('config')
 BASE_RULES_PATH = CONFIG_DIR / 'rules.pl'
+BLACKLIST_PATH = CONFIG_DIR / 'blacklist.pl'
 
 DATA_DIR = Path('data')
 FACTS_PATH = DATA_DIR / 'facts.pl'
-BLACKLIST_PATH = DATA_DIR / 'blacklist.pl'
 MODEL_PATH = DATA_DIR / 'model.pkl'
 TEST_LOG_PATH = DATA_DIR / 'test_log.csv'
 PAST_DECISIONS_PATH = DATA_DIR / 'past-decisions.csv'
