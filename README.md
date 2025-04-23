@@ -63,7 +63,7 @@ python generate_logs.py
 2. Run the main script
 
 ```python
-python src/main.py
+python -m app.main
 ```
 
 3. Unfortunately, that is all there is to see for now!

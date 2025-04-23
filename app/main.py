@@ -4,7 +4,7 @@ from pathlib import Path
 from io import TextIOWrapper
 from pyswip import Prolog
 
-from schema import ProcessedEvent, Event
+from .schema import ProcessedEvent, Event
 
 
 CONFIG_DIR = Path('config')
