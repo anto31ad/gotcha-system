@@ -73,3 +73,4 @@ python -m app.main
 
 - [Architecture overview](./docs/architecture.md)
 - [Use cases](./docs/use-cases.md)
+- [Planned features](./docs/todo.md)

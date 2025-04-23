@@ -5,17 +5,13 @@ from io import TextIOWrapper
 from pyswip import Prolog
 
 from .schema import ProcessedEvent, Event
-
-
-CONFIG_DIR = Path('config')
-BASE_RULES_PATH = CONFIG_DIR / 'rules.pl'
-BLACKLIST_PATH = CONFIG_DIR / 'blacklist.pl'
-
-DATA_DIR = Path('data')
-FACTS_PATH = DATA_DIR / 'facts.pl'
-MODEL_PATH = DATA_DIR / 'model.pkl'
-TEST_LOG_PATH = DATA_DIR / 'test_log.csv'
-PAST_DECISIONS_PATH = DATA_DIR / 'past-decisions.csv'
+from .paths import (
+    BASE_RULES_PATH,
+    BLACKLIST_PATH,
+    PAST_DECISIONS_PATH,
+    FACTS_PATH,
+    TEST_LOG_PATH
+)
 
 if __name__ == "__main__":
     print("\n🔍 Anomalie rilevate:\n")

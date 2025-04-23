@@ -2,8 +2,8 @@ import csv
 import random
 from datetime import datetime, timedelta
 
-from src.schema import EVENT_SCHEMA
-from src.main import TEST_LOG_PATH
+from app.schema import EVENT_SCHEMA
+from app.paths import TEST_LOG_PATH
 
 # Parameters
 num_rows = 100  # you can change this to generate more or fewer rows
