@@ -57,7 +57,7 @@ Now:
 1. Generate fake data by executing
 
 ```python
-python generate_logs.py
+python -m scripts.generate_logs
 ```
 
 2. Run the main script
