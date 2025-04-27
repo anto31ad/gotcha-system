@@ -1,6 +1,5 @@
 import csv
 
-from pathlib import Path
 from io import TextIOWrapper
 from pyswip import Prolog
 
@@ -12,9 +11,9 @@ from .paths import (
     FACTS_PATH,
     TEST_LOG_PATH
 )
+from .logic import process_event
 
 if __name__ == "__main__":
-    print("\n🔍 Anomalie rilevate:\n")
 
     prolog = Prolog()
     prolog.consult(BASE_RULES_PATH.resolve())
@@ -32,29 +31,24 @@ if __name__ == "__main__":
     facts_file: TextIOWrapper = open(FACTS_PATH.resolve(), "w")
 
     log_file: TextIOWrapper = open(TEST_LOG_PATH.resolve(), "r")
-    log_reader= csv.DictReader(log_file)
+    log_reader = csv.DictReader(log_file)
 
-    row_no = 1
-    for row in log_reader:
-        fact = Event(**row).convert_to_prolog_fact()
-        prolog.assertz(fact)
+    anomalies = {}
+    row = 1
+    for event_features in log_reader:
+        event_anomalies = process_event(event_features, prolog, facts_file, past_decision_file)
         
-        facts_file.write(fact + '.\n')
-        response = prolog.query('anomaly(Type, Info)')
-                
+        if event_anomalies: # list not empty
+            anomalies[row] = event_anomalies
 
-        sus = False
-        for index, item in enumerate(response):
-            print(f"{row_no}/{index}: {item}")
-            sus = True
+        row += 1
 
-        # After all listings, the current fact can be removed.
-        # Removing it before will result in an empty response because prolog will see no fact.
-        prolog.retract(fact)
-
-        past_decision_file.write(ProcessedEvent(suspicious=sus, **row).convert_to_fact())
-
-        row_no += 1
+    print(f"Found {len(anomalies)} anomalies")
+    
+    for key, event in anomalies.items():
+        event_anomalies_len = len(event) 
+        for event_index, anomaly in enumerate(event):
+            print(f"row: {key} - anomaly {event_index + 1}/{event_anomalies_len} - details: {anomaly}")
 
     past_decision_file.close()
     facts_file.close()
