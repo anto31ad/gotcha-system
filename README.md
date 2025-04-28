@@ -2,7 +2,7 @@
 
 *Gotcha!* (alias `gotcha-system`) is a proof of concept of an anomaly detection system.
 
-This project was created mainly as a submission for the *Ingegneria della Conoscenza* (Knowledge Engineering) course which is part of the Bachelor's *Informatica* (Computer Science) programme at *Università di Bari Aldo Moro*.
+This project was created mainly as a submission for the *Ingegneria della Conoscenza* (Knowledge Engineering) course, part of the Bachelor's programme in *Informatica* (Computer Science) at *Università di Bari Aldo Moro*.
 
 ## Installation
 
