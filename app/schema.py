@@ -10,7 +10,7 @@ class Event(BaseModel):
 
     def convert_to_prolog_fact(self) -> str:
         return (
-            f'event('
+            f'unprocessed_event('
             f'"{self.date}", '
             f'"{self.time}", '
             f'{self.user}, '

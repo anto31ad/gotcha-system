@@ -29,11 +29,11 @@ def process_event(
     facts_file.write(fact + '.\n') # TODO why no error? how does it get facts_file?
 
     # Now update the status
-    active_user_fact = f'active({event.user})'
+    online_user_fact = f'online_user({event.user})'
     if event.action == 'login':
-        prolog.assertz(active_user_fact)
-    elif event.action == 'logout' and list(prolog.query(active_user_fact)):
-        prolog.retract(active_user_fact)
+        prolog.assertz(online_user_fact)
+    elif event.action == 'logout' and list(prolog.query(online_user_fact)):
+        prolog.retract(online_user_fact)
 
     past_decision_file.write(ProcessedEvent(suspicious=sus, **event_dict).convert_to_fact())
     return anomalies
