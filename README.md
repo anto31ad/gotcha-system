@@ -59,7 +59,7 @@ Now:
 1. Generate fake data by executing
 
 ```python
-python -m scripts.generate_logs
+python -m scripts.genlog
 ```
 
 2. Run the main script
