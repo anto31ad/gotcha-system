@@ -21,10 +21,14 @@ def process_suspicious_events(anomalies: dict[int, SuspiciousEvent]):
                 f"user: {event.user}\n"
                 f"action: {event.action}\n\n"
                 f"anomalies found:\n{anomaly_desc}\n\n"
-                f"What do?\n Skip to next (Enter)\n"
+                f"-------------\n"
+                f"Skip to next (Enter), Blacklist user (b)\n"
             )
             input_value = input()
             if input_value == '':
                 valid_command = True
+            if input_value == 'b':
+                # blacklist user and dismiss all related suspicious events
+                pass 
             else:
                 print('Invalid input\n')
