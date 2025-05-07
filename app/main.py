@@ -35,8 +35,9 @@ if __name__ == "__main__":
 
     anomalies = {}
     row = 1
-    for event_features in log_reader:
-        event_anomalies = process_event(event_features, prolog, facts_file, past_decision_file)
+    for log_row in log_reader:
+        event_dict = {key: str(value) for key, value in log_row.items()}
+        event_anomalies = process_event(Event(**event_dict), prolog, facts_file, past_decision_file)
         
         if event_anomalies: # list not empty
             anomalies[row] = event_anomalies

@@ -5,13 +5,12 @@ from pyswip import Prolog
 from .schema import Event, ProcessedEvent
 
 def process_event(
-        event_dict: dict,
+        event: Event,
         prolog: Prolog,
         facts_file: TextIOWrapper,
         past_decision_file: TextIOWrapper) -> list:
 
     anomalies = []
-    event = Event(**event_dict)
     fact = event.convert_to_prolog_fact()
     prolog.assertz(fact)
 
@@ -26,7 +25,7 @@ def process_event(
     # Removing it before will result in an empty response because prolog will see no fact.
     prolog.retract(fact)
     # write the fact in the knowledge base
-    facts_file.write(fact + '.\n') # TODO why no error? how does it get facts_file?
+    facts_file.write(fact + '.\n')
 
     # Now update the status
     online_user_fact = f'online_user({event.user})'
@@ -35,5 +34,5 @@ def process_event(
     elif event.action == 'logout' and list(prolog.query(online_user_fact)):
         prolog.retract(online_user_fact)
 
-    past_decision_file.write(ProcessedEvent(suspicious=sus, **event_dict).convert_to_fact())
+    #past_decision_file.write(ProcessedEvent(suspicious=sus, **event.model_dump()).convert_to_fact())
     return anomalies
