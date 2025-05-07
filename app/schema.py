@@ -17,6 +17,8 @@ class Event(BaseModel):
             f'{self.action})'
         )
 
+class SuspiciousEvent(Event):
+    anomalies: list[str]
 
 class ProcessedEvent(Event):
     suspicious: bool = False

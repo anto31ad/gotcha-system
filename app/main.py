@@ -3,7 +3,11 @@ import csv
 from io import TextIOWrapper
 from pyswip import Prolog
 
-from .schema import ProcessedEvent, Event
+from .schema import(
+    ProcessedEvent,
+    Event,
+    SuspiciousEvent
+)
 from .paths import (
     BASE_RULES_PATH,
     BLACKLIST_PATH,
@@ -12,45 +16,45 @@ from .paths import (
     TEST_LOG_PATH
 )
 from .logic import process_event
+from .control import process_suspicious_events
 
 if __name__ == "__main__":
 
-    prolog = Prolog()
-    prolog.consult(BASE_RULES_PATH.resolve())
-    prolog.consult(BLACKLIST_PATH.resolve())
+    try:
+        prolog = Prolog()
+        prolog.consult(BASE_RULES_PATH.resolve())
+        prolog.consult(BLACKLIST_PATH.resolve())
 
-    schema = Event.model_fields.keys()
-    past_decisions_header = ''
+        # past_decisions_header = ''
 
-    if not PAST_DECISIONS_PATH.exists():
-        past_decisions_header = ', '.join(ProcessedEvent.model_fields.keys()) + '\n'
+        # if not PAST_DECISIONS_PATH.exists():
+        #     past_decisions_header = ', '.join(ProcessedEvent.model_fields.keys()) + '\n'
 
-    past_decision_file: TextIOWrapper = open(PAST_DECISIONS_PATH.resolve(), "a")
-    past_decision_file.write(past_decisions_header)
+        # past_decision_file: TextIOWrapper = open(PAST_DECISIONS_PATH.resolve(), "a")
+        # past_decision_file.write(past_decisions_header)
 
-    facts_file: TextIOWrapper = open(FACTS_PATH.resolve(), "w")
+        facts_file: TextIOWrapper = open(FACTS_PATH.resolve(), "w")
 
-    log_file: TextIOWrapper = open(TEST_LOG_PATH.resolve(), "r")
-    log_reader = csv.DictReader(log_file)
+        log_file: TextIOWrapper = open(TEST_LOG_PATH.resolve(), "r")
+        log_reader = csv.DictReader(log_file)
 
-    anomalies = {}
-    row = 1
-    for log_row in log_reader:
-        event_dict = {key: str(value) for key, value in log_row.items()}
-        event_anomalies = process_event(Event(**event_dict), prolog, facts_file, past_decision_file)
-        
-        if event_anomalies: # list not empty
-            anomalies[row] = event_anomalies
+        suspicious_events: dict[int, SuspiciousEvent] = {}
+        row = 1
+        for log_row in log_reader:
+            processed_event: SuspiciousEvent = process_event(
+                Event(**log_row), prolog, facts_file)
 
-        row += 1
+            if processed_event.anomalies: # list not empty
+                suspicious_events[row] = processed_event
 
-    print(f"Found {len(anomalies)} anomalies")
-    
-    for key, event in anomalies.items():
-        event_anomalies_len = len(event) 
-        for event_index, anomaly in enumerate(event):
-            print(f"row: {key} - anomaly {event_index + 1}/{event_anomalies_len} - details: {anomaly}")
+            row += 1
 
-    past_decision_file.close()
-    facts_file.close()
-    log_file.close()
+        process_suspicious_events(suspicious_events)
+
+    except KeyboardInterrupt:
+        print('\nShutting down...')
+
+    finally:
+        #past_decision_file.close()
+        facts_file.close()
+        log_file.close()
