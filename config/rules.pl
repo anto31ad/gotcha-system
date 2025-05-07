@@ -15,12 +15,12 @@ night_time(TimeStr) :-
 % base anomaly rules
 
 double_login(User) :-
-    online_user(User),
-    unprocessed_event(_, _, User, login).
+    unprocessed_event(_, _, User, login),
+    online_user(User).
 
 double_logout(User) :-
-    online_user(User),
-    unprocessed_event(_, _, User, login).
+    unprocessed_event(_, _, User, logout),
+    \+ online_user(User).
 
 blacklisted_user(User) :-
     unprocessed_event(_, _, User, _),
@@ -38,8 +38,8 @@ edit_from_offline_user(User) :-
     unprocessed_event(_,_, User, edit),
     \+ online_user(User).
 
-superuser_login_night_time(User, Time) :-
-    unprocessed_event(_, Time, User, edit),
+superuser_login_at_night_time(User, Time) :-
+    unprocessed_event(_, Time, User, login),
     super_user(User),
     night_time(Time).
 
@@ -54,8 +54,8 @@ anomaly(edit_from_unauthorized_user, User) :-
 anomaly(edit_from_offline_user, User) :-
     edit_from_offline_user(User).
 
-anomaly(superuser_login_night_time, (User, Time)) :-
-    superuser_login_night_time(User, Time).
+anomaly(superuser_login_at_night_time, (User, Time)) :-
+    superuser_login_at_night_time(User, Time).
 
 anomaly(blacklisted_user, User) :-
     blacklisted_user(User).
