@@ -27,7 +27,7 @@ def process_suspicious_events(anomalies: dict[int, SuspiciousEvent]):
             input_value = input()
             if input_value == '':
                 valid_command = True
-            if input_value == 'b':
+            elif input_value == 'b':
                 # blacklist user and dismiss all related suspicious events
                 pass 
             else:
