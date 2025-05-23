@@ -60,7 +60,7 @@ def generate_realistic_events(target_num_of_items: int):
             date=current_datetime.strftime('%Y-%m-%d'),
             time=current_datetime.strftime('%H:%M'),
             user=user,
-            action=UserAction.LOGOUT
+            action=UserAction.LOGOUT.value
         )
 
 
