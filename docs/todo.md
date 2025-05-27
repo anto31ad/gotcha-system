@@ -4,10 +4,10 @@
 
 - docs: document how to exit from the program safely 
 - feat: ability to blacklist user when processing event (add it to facts.pl)
-- feat: menu option to delete history (es. facts.pl)
 
 ## Ideas
 
+- feat: menu option to delete history (es. facts.pl)
 - decide if `past-decisions.csv` logic can be used in the future or if it needs to be removed
 - reason on sequence of operations (es. `login -> edit -> logout`)
 - ability to add and reason on new user operations (es. `comment`, `like`, `share`, etc)
