@@ -12,23 +12,22 @@ def process_suspicious_events(anomalies: dict[int, SuspiciousEvent]):
         anomaly_desc = '\n'.join(anomalies_list)
         valid_command = False
         index += 1
+
+        print(
+            f"Suspicious event no. {index} out of {num_of_anomalies}:\n"
+            f"-------------\n"
+            f"row: {key}\n"
+            f"datetime: {event.date} {event.time}\n"
+            f"user: {event.user}\n"
+            f"action: {event.action}\n\n"
+            f"anomalies found:\n{anomaly_desc}\n\n"
+            f"-------------\n"
+            f"See next (Enter)\n"
+        )
+
         while not valid_command:
-            print(
-                f"Suspicious event no. {index} out of {num_of_anomalies}:\n"
-                f"-------------\n"
-                f"row: {key}\n"
-                f"datetime: {event.date} {event.time}\n"
-                f"user: {event.user}\n"
-                f"action: {event.action}\n\n"
-                f"anomalies found:\n{anomaly_desc}\n\n"
-                f"-------------\n"
-                f"Skip to next (Enter), Blacklist user (b)\n"
-            )
             input_value = input()
             if input_value == '':
                 valid_command = True
-            elif input_value == 'b':
-                # blacklist user and dismiss all related suspicious events
-                pass 
             else:
                 print('Invalid input\n')
