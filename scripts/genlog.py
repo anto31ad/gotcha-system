@@ -7,7 +7,7 @@ from app.schema import Event
 from app.paths import TEST_LOG_PATH
 
 # Parameters
-num_rows = 100  # you can change this to generate more or fewer rows
+num_rows = 100
 
 # Sample data pools
 users = ["alice", "bob", "root", "admin", "carol", "eve", "mallory"]
@@ -41,7 +41,7 @@ def generate_realistic_events(target_num_of_items: int):
         elif action == UserAction.LOGOUT:
             online_users.remove(user)
 
-        # advance time by a random amount of minutes
+        # advance time by a random amount of minutes within 15m
         random_minutes = random.randint(0, 15)
         time_delta = timedelta(minutes=random_minutes)
         current_datetime += time_delta
@@ -93,7 +93,9 @@ def pick_next_unpriviledged_user_action(online: bool):
         return UserAction.NONE
    
 
-# Generate CSV
+# Generation starts here
+# ======================
+
 with open(TEST_LOG_PATH.resolve(), mode="w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(Event.__annotations__.keys())
@@ -112,7 +114,7 @@ with open(TEST_LOG_PATH.resolve(), mode="w", newline="") as file:
 
 print(f"Generated {count} rows")
 
-
+# TODO decide what to do with this
 # def generate_action_sequence(super_user: bool):
 
 #     if super_user:
