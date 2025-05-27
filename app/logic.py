@@ -16,10 +16,10 @@ def process_event(
 
     response = prolog.query('anomaly(Type, Info)')
 
-    sus = False
+    #sus = False
     for item in response:
         anomalies.append(item['Type'])
-        sus = True
+        #sus = True
 
     # After all listings, the current fact can be removed.
     # Removing it before will result in an empty response because prolog will see no fact.
