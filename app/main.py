@@ -41,8 +41,7 @@ if __name__ == "__main__":
         suspicious_events: dict[int, SuspiciousEvent] = {}
         row = 1
         for log_row in log_reader:
-            processed_event: SuspiciousEvent = process_event(
-                Event(**log_row), prolog, facts_file)
+            processed_event: SuspiciousEvent = process_event(Event(**log_row), prolog)
 
             if processed_event.anomalies: # list not empty
                 suspicious_events[row] = processed_event
