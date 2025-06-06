@@ -19,6 +19,7 @@ def generate_events_to_file(iterations: int):
 
             for event in events:
                 writer.writerow([
+                    event.session_id,
                     event.date,
                     event.time,
                     event.user,
