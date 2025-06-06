@@ -7,10 +7,9 @@
 super_user(root).
 super_user(admin).
 
-night_time(TimeStr) :-
-    sub_atom(TimeStr, 0, 2, _, HourAtom),
-    atom_number(HourAtom, Hour),
-    Hour < 6.
+night_time(MinutesPastMidnight) :-
+    MinutesPastMidnight >= 0,
+    MinutesPastMidnight < 6.
 
 % base anomaly rules
 

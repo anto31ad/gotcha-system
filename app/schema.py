@@ -1,21 +1,19 @@
+from enum import Enum
 from pydantic import BaseModel
 
 EVENT_SCHEMA: list[str] = ["date", "time", "ip", "user", "action"]
 
-class Event(BaseModel):
-    date: str = ''
-    time: str = ''
-    user: str = ''
-    action: str = ''
+class UserAction(Enum):
+    LOGIN = 'login'
+    LOGOUT = 'logout'
+    EDIT = 'edit'
+    NONE = None
 
-    def convert_to_prolog_fact(self) -> str:
-        return (
-            f'unprocessed_event('
-            f'"{self.date}", '
-            f'"{self.time}", '
-            f'{self.user}, '
-            f'{self.action})'
-        )
+class Event(BaseModel):
+    date: str | None = None
+    time: int | None = None
+    user: str | None = None
+    action: UserAction = UserAction.NONE
 
 class SuspiciousEvent(Event):
     anomalies: list[str]

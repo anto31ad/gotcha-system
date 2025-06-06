@@ -1,22 +1,20 @@
 import csv
 
+from datetime import datetime, timedelta
 from io import TextIOWrapper
 from pyswip import Prolog
 
 from .schema import(
-    ProcessedEvent,
-    Event,
     SuspiciousEvent
 )
 from .paths import (
     BASE_RULES_PATH,
     BLACKLIST_PATH,
-    PAST_DECISIONS_PATH,
-    FACTS_PATH,
-    TEST_LOG_PATH
 )
 from .logic import process_event
 from .control import process_suspicious_events
+from . import manifesto as Manifesto
+from .test import generate_events_to_file
 
 if __name__ == "__main__":
 
@@ -25,35 +23,32 @@ if __name__ == "__main__":
         prolog.consult(BASE_RULES_PATH.resolve())
         prolog.consult(BLACKLIST_PATH.resolve())
 
-        # past_decisions_header = ''
-
-        # if not PAST_DECISIONS_PATH.exists():
-        #     past_decisions_header = ', '.join(ProcessedEvent.model_fields.keys()) + '\n'
-
-        # past_decision_file: TextIOWrapper = open(PAST_DECISIONS_PATH.resolve(), "a")
-        # past_decision_file.write(past_decisions_header)
-
-        facts_file: TextIOWrapper = open(FACTS_PATH.resolve(), "w")
-
-        log_file: TextIOWrapper = open(TEST_LOG_PATH.resolve(), "r")
-        log_reader = csv.DictReader(log_file)
-
+        time_of_day = datetime.now()
         suspicious_events: dict[int, SuspiciousEvent] = {}
-        row = 1
-        for log_row in log_reader:
-            processed_event: SuspiciousEvent = process_event(Event(**log_row), prolog)
+        iterations_done = 0
+        while True:
+            # ask Manifesto for new events (Monitoring)
+            new_events, minutes_elapsed = Manifesto.get_next_events(time_of_day, debug=True)
+            time_of_day += timedelta(minutes=minutes_elapsed)
 
-            if processed_event.anomalies: # list not empty
-                suspicious_events[row] = processed_event
+            row = 1
+            for event in new_events:
+                processed_event: SuspiciousEvent = process_event(event, prolog)
+                
+                # TODO if model for user exists, run model and append any anomalies
 
-            row += 1
+                if processed_event.anomalies: # list not empty
+                    suspicious_events[row] = processed_event
 
-        process_suspicious_events(suspicious_events)
+                row += 1
+            
+            process_suspicious_events(suspicious_events, iterations_done + 1)
+
+            # TODO ask if gotcha user wants to continue or train the models
+            iterations_done += 1
 
     except KeyboardInterrupt:
         print('\nShutting down...')
 
     finally:
-        #past_decision_file.close()
-        facts_file.close()
-        log_file.close()
+        pass
