@@ -9,7 +9,7 @@ super_user(admin).
 
 night_time(MinutesPastMidnight) :-
     MinutesPastMidnight >= 0,
-    MinutesPastMidnight < 6.
+    MinutesPastMidnight < 360.
 
 % base anomaly rules
 
