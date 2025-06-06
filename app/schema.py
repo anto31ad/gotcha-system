@@ -10,6 +10,7 @@ class UserAction(Enum):
     NONE = None
 
 class Event(BaseModel):
+    session_id: str | None = None
     date: str | None = None
     time: int | None = None
     user: str | None = None

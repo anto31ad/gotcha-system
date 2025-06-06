@@ -1,4 +1,5 @@
 import random
+import string
 
 from datetime import datetime, timedelta
 
@@ -8,6 +9,10 @@ _unpriviledged_users = ["alice", "bob", "carol", "eve", "mallory"]
 _superusers = ['admin', 'root']
 _users = _unpriviledged_users + _superusers
 _nighttime_range_in_minutes = range(0, 360) # from midnight to 6AM
+_session_id_char_pool = string.ascii_letters + string.digits
+
+def _random_session_id():
+    return ''.join(random.choices(_session_id_char_pool, k=8))
 
 
 def _datestr_from_datetime(dt: datetime) -> str:
@@ -49,6 +54,7 @@ def _generate_user_session(
     ) -> tuple[list[Event], int]:
 
     events: list[Event] = []
+    session_id = _random_session_id()
 
     next_action_func = _pick_next_super_user_action \
         if superuser else _pick_next_unpriviledged_user_action
@@ -70,6 +76,7 @@ def _generate_user_session(
         # it is best to use timedelta to account for time deltas crossing the end of the day
         cur_datetime = start_datetime + timedelta(minutes=tot_min_elapsed)
         events.append( Event(
+            session_id=session_id,
             date=_datestr_from_datetime(cur_datetime),
             time=_minutes_from_datetime(cur_datetime),
             user=user,
@@ -80,7 +87,7 @@ def _generate_user_session(
 
 def get_next_events(
         start_datetime: datetime,
-        debug: bool = False,    
+        debug: bool = False,
     ) -> tuple[list[Event], int]:
     
     events: list[Event] = []
