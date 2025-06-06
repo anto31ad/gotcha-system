@@ -2,12 +2,46 @@ import random
 import string
 
 from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+
+@dataclass
+class User:
+    name: str = "unknown"
+    is_super: bool = False
+    time_ranges: list = field(default_factory=list)
 
 from .schema import Event, UserAction
 
-_unpriviledged_users = ["alice", "bob", "carol", "eve", "mallory"]
-_superusers = ['admin', 'root']
-_users = _unpriviledged_users + _superusers
+_users = [
+    User(
+        name='alice',
+        is_super=False,
+        time_ranges=[range(400, 780), range(860, 1100)]),
+    User(
+        name='bob',
+        is_super=False,
+        time_ranges=[range(450, 700), range(840, 1000), range(1200, 1250)]),
+    User(
+        name='eve',
+        is_super=False,
+        time_ranges=[range(450, 700), range(900, 1000), range(0, 120)]),
+    User(
+        name='carol',
+        is_super=False,
+        time_ranges=[range(500, 900), range(1000, 1200)]
+    ),
+    User(
+        name='root',
+        is_super=True,
+        time_ranges=[range(0, 1440)]
+    ),
+    User(
+        name='admin',
+        is_super=True,
+        time_ranges=[range(0, 1440)]
+    ),
+]
+
 _nighttime_range_in_minutes = range(0, 360) # from midnight to 6AM
 _session_id_char_pool = string.ascii_letters + string.digits
 
@@ -98,19 +132,23 @@ def get_next_events(
 
     total_minutes_elapsed = 0
     for user in _users:
-        random_perc = random.random()
-        is_superuser = user in _superusers
 
-        if is_nighttime:
+        # TODO use ranges
+        is_their_timerange = any(minutes_past_midnight in r for r in user.time_ranges)
+
+        if is_their_timerange:
+            # superusers are thought to be less active than unpriviledged users 
+            chance_of_inactivity = 0.4 if user.is_super else 0.2
+        elif is_nighttime:
             chance_of_inactivity = 0.9
         else:
-            # superusers are thought to be less active than unpriviledged users 
-            chance_of_inactivity = 0.4 if is_superuser else 0.2
+            chance_of_inactivity = 0.7
 
+        random_perc = random.random()
         if random_perc < chance_of_inactivity:
             continue
         else:
-            user_events, minutes_elapsed = _generate_user_session(start_datetime, user, is_superuser)
+            user_events, minutes_elapsed = _generate_user_session(start_datetime, user.name, user.is_super)
             total_minutes_elapsed = max(total_minutes_elapsed, minutes_elapsed) 
             events.extend(user_events)
 
@@ -119,6 +157,6 @@ def get_next_events(
 
     if debug:
         for event in events:
-            print(f"{event.date}, {event.time}, {event.user}, {event.action.value}")
+            print(event.model_dump())
 
     return events, total_minutes_elapsed
