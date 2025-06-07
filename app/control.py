@@ -22,6 +22,8 @@ from .learning import (
 )
 from . import manifesto as Manifesto
 
+MAX_ITERATIONS = 15
+
 def _process_suspicious_events(
         queue: deque[SuspiciousEvent],
         iteration_num: int,
@@ -30,6 +32,10 @@ def _process_suspicious_events(
 
     false_positives: list[Event] = []
     queue_len = len(queue)
+
+    if queue_len < 1:
+        return
+
     while queue_len > 0:
         event = queue.popleft()
 
@@ -97,10 +103,6 @@ def _serialize_event_examples(events: list[Event]):
 
 
 def _continue_with_next_iteration() -> bool:
-    print(
-        "(!) ITERATION COMPLETED (!)\n"
-        "Press Enter to continue, or 'B' to go back.")
-
     input_value = None
     while True:
 
@@ -115,43 +117,57 @@ def _continue_with_next_iteration() -> bool:
 
 
 def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False):
-    try:
-        time_of_day = datetime.now()
-        iterations_done = 0
-        sus_events: deque[SuspiciousEvent] = deque()
-        iterate = True
+    time_of_day = datetime.now()
+    iterations_done = 0
+    sus_events: deque[SuspiciousEvent] = deque()
+    iterate = True
+
+    while iterate:
         normal_events: list[Event] = []
-        while iterate:
-            # ask Manifesto for new events (Monitoring) until at least one suspicious pops up 
-            while len(sus_events) < 1:
-                new_events, minutes_elapsed = Manifesto.get_next_events(
-                    time_of_day, debug=debug_mode)
-                # advance time
-                time_of_day += timedelta(minutes=minutes_elapsed)
-
-                for event in new_events:
-                    inferred_anomalies = check_event_using_inference(event, prolog)
-                    predicted_anomalies = check_event_using_predictor(predictors, event)
-                    anomalies = inferred_anomalies + predicted_anomalies
-                    if anomalies:
-                        sus_events.append(
-                            SuspiciousEvent(
-                                anomalies=anomalies,
-                                **event.model_dump()))
-                    else:
-                        normal_events.append(event)
+        
+        # MAX_ITERATIONS prevents infinite cycling if no suspicious events are found
+        #   for ex. when disabling inference and predictors
+        has_hit_max_iterations = False
+        iterations_without_hits = 0
+        # ask Manifesto for new events (Monitoring) until at least one suspicious pops up 
+        while len(sus_events) < 1:
+            iterations_without_hits += 1
+            has_hit_max_iterations = iterations_without_hits >= MAX_ITERATIONS
             
-            iterations_done += 1
+            if has_hit_max_iterations:
+                print("Reached max iterations when asking Manifesto for events")
+                break
 
-            # let the user decide if suspicious events are true positives or false positives;
-            # false positives extend the normal_events list, which will be later serialized
-            _process_suspicious_events(sus_events, iterations_done, normal_events)
-            _serialize_event_examples(normal_events)
+            new_events, minutes_elapsed = Manifesto.get_next_events(
+                time_of_day, debug=debug_mode)
+            # advance time
+            time_of_day += timedelta(minutes=minutes_elapsed)
 
-            iterate = _continue_with_next_iteration()
+            for event in new_events:
+                inferred_anomalies = check_event_using_inference(event, prolog)
+                predicted_anomalies = check_event_using_predictor(predictors, event)
+                anomalies =  inferred_anomalies + predicted_anomalies
+                if anomalies:
+                    sus_events.append(
+                        SuspiciousEvent(
+                            anomalies=anomalies,
+                            **event.model_dump()))
+                else:
+                    normal_events.append(event)
+        
 
-    except KeyboardInterrupt:
-        print('\nGoing back...')
+        # let the user decide if suspicious events are true positives or false positives;
+        # false positives extend the normal_events list, which will be later serialized
+        _process_suspicious_events(sus_events, iterations_done, normal_events)
+        _serialize_event_examples(normal_events)
+
+        if not has_hit_max_iterations:
+                print("(!) ITERATION COMPLETED (!)\n")
+
+        print("Press Enter to continue, or 'B' to go back.")
+
+        iterate = _continue_with_next_iteration()
+        iterations_done += 1
 
 
 def train():
@@ -160,8 +176,8 @@ def train():
     events_size = len(event_examples)
     if events_size < 1:
         print("No past events found!")
-    elif events_size < 10:
-        print(f"There are just {events_size} events in past data. Wait for at least 10.")
+    elif events_size < 100:
+        print(f"There are just {events_size} events in past data. Wait for at least 100")
     else:
         print("Starting training...")
         train_user_models(event_examples)

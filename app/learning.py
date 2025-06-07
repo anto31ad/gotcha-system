@@ -1,15 +1,16 @@
-import csv
 import numpy as np
 import joblib
+import matplotlib.pyplot as plt
 
 from pathlib import Path
+from kneed import KneeLocator
 from sklearn.cluster import KMeans
 
 from .schema import Event
 from . import paths
 
-K_MEANS_PARAM = 3
-
+KMEANS_MAX_K = 10
+KMEANS_RANDOM_RESTARTS = 5
 
 def create_time_column(minutes_list: list[int]):
     minutes_norm = np.array(minutes_list) / 1440
@@ -18,10 +19,11 @@ def create_time_column(minutes_list: list[int]):
     return np.column_stack([minutes_sin, minutes_cos])
 
 
-def determine_optimal_number_of_cluster(
+def calculate_optimal_k_for_kmeans(
         data,
         min_clusters: int,
-        max_clusters: int
+        max_clusters: int,
+        plot_path: Path | None = None,
 ):
     
     if min_clusters < 1 or max_clusters < 1:
@@ -38,42 +40,87 @@ def determine_optimal_number_of_cluster(
     #   of each example E (of the training set) to the closest centroid
     # inertia_points will store the intertia of each model
     intertia_points = []
-    for i in range(min_clusters, max_clusters):
+    
+    range_k = range(min_clusters, max_clusters)
+    for i in range_k:
         model = KMeans(
             n_clusters=i,
             # perform random restart n_init=5 times; then return the best cluster-set (in terms of intertia)
-            n_init=5,      
+            n_init=KMEANS_RANDOM_RESTARTS,      
             init='random',
         )
         model.fit(data)
         intertia_points.append(model.inertia_)
 
+    kneeloc = KneeLocator(
+        x=range_k,
+        y=intertia_points,
+        curve='convex',         # convex to detect elbows
+        direction='decreasing', # intertia decreases as k grows
+    )
+
+    # write the plot to file, for debugging
+    if plot_path:
+        plt.figure()
+        plt.plot(list(range_k), intertia_points, 'bo-')
+        if kneeloc.elbow is not None:
+            plt.vlines(
+                kneeloc.elbow,
+                plt.ylim()[0],
+                plt.ylim()[1],
+                linestyles='dashed',
+                colors='red')
+        plt.xlabel('Number of clusters (k)')
+        plt.ylabel('Inertia')
+        plt.title('Optimizing k using the Elbow Method')
+        plt.savefig(plot_path.resolve())
+        plt.close()
+
+    return kneeloc.elbow
+
 
 def train_user_models(event_examples: list[Event]):
+    # GOAL: Find patterns in the daily times each user interacts with the system. 
 
     # check if there are at least two examples of events
     if len(event_examples) < 2:
         return
 
-    # GOAL: Find patterns in the daily times each user interacts with the system. 
-
-    # get the list of user appearing in the examples
+    # get the list of user appearing in the examples and train a model for each one
     users_list =  sorted(set(e.user for e in event_examples))
-
-    # Phase 2: train a model for each user
-    user_models: dict[str, KMeans] = {}
     for user in users_list:
         model_filepath = paths.USER_MODELS_DIR / f"{user}.pkl"
+        model_optimal_k_plot_filepath = paths.USER_MODELS_DIR / f"{user}_elbow.png"
 
         # get the minute examples for this user
         minutes = [e.time for e in event_examples if e.user == user]
-        # check if there are at least K_MEANS_PARAM (number of clusters) examples for this user
-        if len(minutes) < K_MEANS_PARAM:
+        # check if there are at least KMEANS_MAX_K (number o10 clusters) examples for this user
+        if len(minutes) < KMEANS_MAX_K:
+            print(f"(!) Could not train model for user '{user}': "
+                  f"At least {KMEANS_MAX_K} examples are needed, but just {len(minutes)} were provided")
             continue
         # build the column and train the model
         minutes_col = create_time_column(minutes)
-        model = KMeans(n_clusters=K_MEANS_PARAM, random_state=0).fit(minutes_col)
-        user_models[user] = model
+        optimal_k = calculate_optimal_k_for_kmeans(
+            data=minutes_col,
+            min_clusters=1,
+            max_clusters=KMEANS_MAX_K,
+            plot_path=model_optimal_k_plot_filepath
+        )
+
+        if not optimal_k:
+            print(f"(!) Could not train model for user '{user}': "
+                  "no optimal parameters found")
+            continue
+
+        model = KMeans(
+            n_clusters=optimal_k,
+            n_init=KMEANS_RANDOM_RESTARTS,
+            init='random',
+            random_state=42
+        )
+        model.fit(minutes_col)
+    
         joblib.dump(model, model_filepath.resolve())
         print(f"Trained model for user '{user}''s daily time of activity")
 
@@ -98,12 +145,12 @@ def check_event_using_predictor(user_models: dict, event: Event) -> list[str]:
         print(f"No model found for user {event.user}")
         return []
 
+    # the idea is to compute the distance of the event from the closest centroid
     distances = user_model.transform(test_example)[0]
+    min_distance = np.min(distances)
+    percentage = (min_distance / 2)
 
-    distances_norm = distances / distances.sum()
-    print (f"{event.user}'s access time: {test_example[0]}")
-    print(f"Distances from {event.user} at {event.time} to each cluster center: {distances}")
-    print(f"Normalized distances (sum=1): {distances_norm}")
-    print(f"Closest cluster: {np.argmin(distances)}")
-    
-    return []
+    if percentage < 0.25:
+        return []
+
+    return [f"Distance to closest centroid: {min_distance:.4f} ({percentage:.2f}% of max possible)"]

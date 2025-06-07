@@ -4,6 +4,7 @@ cycler==0.12.1
 fonttools==4.58.1
 joblib==1.4.2
 kiwisolver==1.4.8
+kneed==0.8.5
 matplotlib==3.10.3
 numpy==2.2.4
 packaging==25.0
