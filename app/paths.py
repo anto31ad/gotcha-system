@@ -14,6 +14,9 @@ if not DATA_DIR.exists():
     os.makedirs(DATA_DIR)
 
 FACTS_PATH = DATA_DIR / 'facts.pl'
-MODEL_PATH = DATA_DIR / 'model.pkl'
 TEST_LOG_PATH = DATA_DIR / 'test_log.csv'
-PAST_DECISIONS_PATH = DATA_DIR / 'past-decisions.csv'
+EVENT_EXAMPLES_PATH = DATA_DIR / 'past-events.csv'
+
+USER_MODELS_DIR = DATA_DIR / Path('users')
+if not USER_MODELS_DIR.exists():
+    os.makedirs(USER_MODELS_DIR)

@@ -10,10 +10,10 @@ class UserAction(Enum):
     NONE = None
 
 class Event(BaseModel):
-    session_id: str | None = None
-    date: str | None = None
+    session_id: str = '0'
+    date: str = 'YYYY-MM-dd'
     time: int = 0
-    user: str | None = None
+    user: str = 'unknown'
     action: UserAction = UserAction.NONE
 
 class SuspiciousEvent(Event):
