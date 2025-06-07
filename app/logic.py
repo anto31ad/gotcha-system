@@ -15,11 +15,21 @@ def _convert_event_to_prolog_fact(event: Event) -> str | None:
     except:
         return None
 
+def update_kb(event: Event, prolog: Prolog):
+    # update the user status
+    online_user_fact = f'online_user({event.user})'
+    user_is_online = len(list(prolog.query(online_user_fact))) > 0    
 
-def process_event(
+    if event.action == UserAction.LOGIN and not user_is_online:
+        prolog.assertz(online_user_fact)
+    elif event.action == UserAction.LOGOUT and user_is_online:
+        prolog.retract(online_user_fact)
+
+
+def check_event_using_inference(
         event: Event,
         prolog: Prolog,
-    ) -> SuspiciousEvent:
+    ) -> list[str]:
 
     anomalies = []
 
@@ -40,13 +50,6 @@ def process_event(
     # Removing it before will result in an empty response because prolog will see no fact.
     prolog.retract(fact)
 
-    # Now update the status
-    online_user_fact = f'online_user({event.user})'
-    user_is_online = len(list(prolog.query(online_user_fact))) > 0    
-    if event.action == UserAction.LOGIN and not user_is_online:
-        prolog.assertz(online_user_fact)
-    elif event.action == UserAction.LOGOUT and user_is_online:
-        prolog.retract(online_user_fact)
-
-    # return an istance of a suspicious event that will be processed by the user 
-    return SuspiciousEvent(anomalies=anomalies, **event.model_dump())
+    update_kb(event, prolog)
+ 
+    return anomalies
