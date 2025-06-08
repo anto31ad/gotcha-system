@@ -1,6 +1,8 @@
 import csv
 import numpy as np
+import pandas as pd
 
+from datetime import timedelta, datetime
 from pathlib import Path
 
 from .schema import Event, UserAction
@@ -22,7 +24,6 @@ def sincos_to_minutes(sin_val, cos_val):
     fraction = angle / (2 * np.pi)
 
     return int(round(fraction * 1440))
-
 
 
 def convert_timestr_to_min(timestr) -> int:
@@ -48,3 +49,13 @@ def parse_events_from_csv(filepath: Path) -> list[Event]:
                 )
             )
     return events
+
+
+def get_next_day_from_past_events(filepath: Path):
+
+    if not filepath.exists():
+        return datetime.today() + timedelta(hours=6)
+
+    df = pd.read_csv(filepath.resolve())
+    last_date = pd.to_datetime(df["date"]).max()
+    return last_date + timedelta(days=1, hours=6)
