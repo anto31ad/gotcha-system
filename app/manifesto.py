@@ -42,7 +42,6 @@ _users = [
     ),
 ]
 
-_nighttime_range_in_minutes = range(0, 360) # from midnight to 6AM
 _session_id_char_pool = string.ascii_letters + string.digits
 
 def _random_session_id():
@@ -75,7 +74,7 @@ def _pick_next_unpriviledged_user_action():
         return UserAction.LOGIN
     elif perc < 0.15:
         return UserAction.EDIT
-    elif perc < 0.6:
+    elif perc < 0.9:
         return UserAction.LOGOUT
     else:
         return UserAction.NONE
@@ -119,8 +118,9 @@ def _generate_user_session(
         
         # if the current action is logout, add a chance that if fails
         #  (so it triggers the "double login" rule)
-        if cur_action != UserAction.LOGOUT:
-            stop = True if random.random() < 0.9 else False
+        if cur_action == UserAction.LOGOUT:
+            chance_of_logout_success = random.random()
+            stop = True if chance_of_logout_success < 0.8 else False
 
     return (events, tot_min_elapsed)
 
@@ -132,24 +132,20 @@ def get_next_events(
     
     events: list[Event] = []
     minutes_past_midnight = _minutes_from_datetime(start_datetime)
-    is_nighttime = minutes_past_midnight in _nighttime_range_in_minutes
-
-    # during night time, there is less chance of user activity
 
     total_minutes_elapsed = 0
     for user in _users:
 
-        is_their_timerange = any(minutes_past_midnight in timerange for timerange in user.time_ranges)
+        is_their_timerange = any(
+            minutes_past_midnight in timerange for timerange in user.time_ranges)
 
         if debug:
-            print(f"{user.name}, time: {minutes_past_midnight}, their timerange: {is_their_timerange}")
+            print(f"{user.name}, time: {minutes_past_midnight}, is their timerange?={is_their_timerange}")
 
         if is_their_timerange:
-            chance_of_inactivity = 0.5
-        elif is_nighttime:
-            chance_of_inactivity = 0.9
+            chance_of_inactivity = 0.3
         else:
-            chance_of_inactivity = 0.7
+            chance_of_inactivity = 0.8
 
         random_perc = random.random()
         if random_perc < chance_of_inactivity:
