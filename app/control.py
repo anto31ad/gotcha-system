@@ -6,21 +6,23 @@ from pyswip import Prolog
 
 from .schema import SuspiciousEvent
 
-from .paths import (
-    EVENT_EXAMPLES_PATH,
-)
-
 from .schema import(
     SuspiciousEvent,
     Event
 )
 from .logic import check_event_using_inference
-from .utils import minutes_to_hhmm, parse_events_from_csv
+from .utils import (
+    minutes_to_hhmm,
+    parse_events_from_csv,
+    get_next_day_from_past_events
+)
 from .learning import (
     learn_users_time_patterns,
     check_event_using_predictor
 )
 from . import manifesto as Manifesto
+from . import paths
+
 
 MAX_ITERATIONS = 15
 MINIMUM_NUMBER_OF_EXAMPLES = 100
@@ -86,9 +88,9 @@ def _serialize_event_examples(events: list[Event]):
     if not events:
         return
 
-    needs_header = not EVENT_EXAMPLES_PATH.exists()
+    needs_header = not paths.EVENT_EXAMPLES_PATH.exists()
     sorted_events = sorted(events, key=lambda event: (event.date, event.time))
-    with open(EVENT_EXAMPLES_PATH.resolve(), mode='a', newline='', encoding='utf-8') as csvfile:
+    with open(paths.EVENT_EXAMPLES_PATH.resolve(), mode='a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         if needs_header:
             writer.writerow(Event.__annotations__.keys())
@@ -118,7 +120,7 @@ def _continue_with_next_iteration() -> bool:
 
 
 def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False):
-    time_of_day = datetime.now()
+    time_of_day = get_next_day_from_past_events(paths.EVENT_EXAMPLES_PATH)
     iterations_done = 0
     sus_events: deque[SuspiciousEvent] = deque()
     iterate = True
@@ -178,7 +180,7 @@ def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False
 
 
 def train():
-    event_examples = parse_events_from_csv(EVENT_EXAMPLES_PATH)
+    event_examples = parse_events_from_csv(paths.EVENT_EXAMPLES_PATH)
 
     events_size = len(event_examples)
 
