@@ -120,7 +120,7 @@ def _generate_user_session(
         # if the current action is logout, add a chance that if fails
         #  (so it triggers the "double login" rule)
         if cur_action != UserAction.LOGOUT:
-            stop = True if random.random() > 0.5 else False
+            stop = True if random.random() < 0.9 else False
 
     return (events, tot_min_elapsed)
 
