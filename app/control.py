@@ -144,9 +144,15 @@ def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False
             time_of_day += timedelta(minutes=minutes_elapsed)
 
             for event in new_events:
+
+                # use prolog to infer if event is suspicious
                 inferred_anomalies = check_event_using_inference(event, prolog)
+                # if trained, use the predictor to decide if event is suspicious
                 predicted_anomalies = check_event_using_predictor(predictors, event)
+                # combine the anomalies
                 anomalies =  inferred_anomalies + predicted_anomalies
+                # if anomalies are found, add the event to the sus_events list;
+                #   otherwise add it to the normal events list
                 if anomalies:
                     sus_events.append(
                         SuspiciousEvent(
@@ -155,6 +161,7 @@ def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False
                 else:
                     normal_events.append(event)
         
+        iterations_done += 1
 
         # let the user decide if suspicious events are true positives or false positives;
         # false positives extend the normal_events list, which will be later serialized
@@ -167,7 +174,6 @@ def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False
         print("Press Enter to continue, or 'B' to go back.")
 
         iterate = _continue_with_next_iteration()
-        iterations_done += 1
 
 
 def train():
