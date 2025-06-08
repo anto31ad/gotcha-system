@@ -17,7 +17,7 @@ from .schema import(
 from .logic import check_event_using_inference
 from .utils import minutes_to_hhmm, parse_events_from_csv
 from .learning import (
-    train_user_models,
+    learn_users_time_patterns,
     check_event_using_predictor
 )
 from . import manifesto as Manifesto
@@ -186,7 +186,7 @@ def train():
         print(f"There are just {events_size} events in past data. Wait for at least 100")
     else:
         print("Starting training...")
-        train_user_models(event_examples)
+        learn_users_time_patterns(event_examples)
 
     # wait for user input before returning
     while True:

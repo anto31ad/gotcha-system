@@ -17,6 +17,10 @@ FACTS_PATH = DATA_DIR / 'facts.pl'
 TEST_LOG_PATH = DATA_DIR / 'test_log.csv'
 EVENT_EXAMPLES_PATH = DATA_DIR / 'past-events.csv'
 
-USER_MODELS_DIR = DATA_DIR / Path('users')
-if not USER_MODELS_DIR.exists():
-    os.makedirs(USER_MODELS_DIR)
+PREDICTORS_DIR = DATA_DIR / Path('predictors')
+if not PREDICTORS_DIR.exists():
+    os.makedirs(PREDICTORS_DIR)
+
+PREDICTOR_PLOTS_DIR = DATA_DIR / Path('plots')
+if not PREDICTOR_PLOTS_DIR.exists():
+    os.makedirs(PREDICTOR_PLOTS_DIR)

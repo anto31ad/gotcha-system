@@ -1,16 +1,19 @@
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 
 from pathlib import Path
 from kneed import KneeLocator
 from sklearn.cluster import KMeans
 
+from .utils import sincos_to_minutes, minutes_to_hhmm
 from .schema import Event
 from . import paths
 
 KMEANS_MAX_K = 10
 KMEANS_RANDOM_RESTARTS = 5
+NORMAL_ACCESS_TIME_THRESHOLD_MINUTES = 120
 
 def create_time_column(minutes_list: list[int]):
     minutes_norm = np.array(minutes_list) / 1440
@@ -59,7 +62,7 @@ def calculate_optimal_k_for_kmeans(
         direction='decreasing', # intertia decreases as k grows
     )
 
-    # write the plot to file, for debugging
+    # plot the curve and write the plot to file (for debugging)
     if plot_path:
         plt.figure()
         plt.plot(list(range_k), intertia_points, 'bo-')
@@ -78,8 +81,54 @@ def calculate_optimal_k_for_kmeans(
 
     return kneeloc.elbow
 
+def _plot_user_clusters(
+        user_model: KMeans, # fitted kmeans model
+        examples,   # numpy column
+        user: str,
+        plot_filepath: Path,
+):
 
-def train_user_models(event_examples: list[Event]):
+    centroids = user_model.cluster_centers_
+
+    plt.figure(figsize=(6, 6))
+    
+    # plot the examples with blue bullets
+    plt.scatter(examples[:, 0], examples[:, 1], c='blue', label='Examples', alpha=0.6)
+    # plot the centroids with a red X
+    plt.scatter(centroids[:, 0], centroids[:, 1], c='red', marker='X', s=200, label='Centroids')
+
+    # draw the unit circle for reference
+    circle = Circle((0, 0), 1, color='gray', fill=False, linestyle='--', alpha=0.5)
+    plt.gca().add_artist(circle)
+
+    for hour in range(24):
+        angle = 2 * np.pi * (hour / 24)
+        x_outer = 0.95 * np.sin(angle)
+        y_outer = 0.95 * np.cos(angle)
+        x_inner = 0.92 * x_outer
+        y_inner = 0.92 * y_outer
+        plt.plot(
+            [x_inner, x_outer],
+            [y_inner, y_outer], color='gray', lw=2)
+        # Label main hours
+        if hour % 6 == 0:
+            label = str(hour)
+            x_label = 0.7 * x_outer
+            y_label = 0.7 * y_outer
+            plt.text(x_label, y_label, label, ha='center', va='center', fontsize=10, fontweight='bold')
+
+    plt.xlabel('sin(time)')
+    plt.ylabel('cos(time)')
+    plt.title(f'User {user} - Daily time of activity')
+    plt.legend()
+
+    plt.axis('equal')
+    plt.grid(True)
+    plt.savefig(plot_filepath.resolve())
+    plt.close()
+
+
+def learn_users_time_patterns(event_examples: list[Event]):
     # GOAL: Find patterns in the daily times each user interacts with the system. 
 
     # check if there are at least two examples of events
@@ -89,8 +138,9 @@ def train_user_models(event_examples: list[Event]):
     # get the list of user appearing in the examples and train a model for each one
     users_list =  sorted(set(e.user for e in event_examples))
     for user in users_list:
-        model_filepath = paths.USER_MODELS_DIR / f"{user}.pkl"
-        model_optimal_k_plot_filepath = paths.USER_MODELS_DIR / f"{user}_elbow.png"
+        model_filepath = paths.PREDICTORS_DIR / f"{user}.pkl"
+        model_optimal_k_plot_filepath = paths.PREDICTOR_PLOTS_DIR / f"{user}_elbow.png"
+        clusters_plot_filepath = paths.PREDICTOR_PLOTS_DIR / f"{user}_clusters.png"
 
         # get the minute examples for this user
         minutes = [e.time for e in event_examples if e.user == user]
@@ -120,37 +170,57 @@ def train_user_models(event_examples: list[Event]):
             random_state=42
         )
         model.fit(minutes_col)
-    
+
+        # plot the clusters (for debugging)
+        _plot_user_clusters(
+            model,
+            minutes_col,
+            user,
+            clusters_plot_filepath)
+
+
         joblib.dump(model, model_filepath.resolve())
         print(f"Trained model for user '{user}''s daily time of activity")
 
 
-def get_user_predictive_models():
+def get_user_predictors() -> dict[str, KMeans]:
     user_models: dict[str, KMeans] = {}
 
     # if models exist, load them
-    for filepath in paths.USER_MODELS_DIR.glob("*.pkl"):
+    for filepath in paths.PREDICTORS_DIR.glob("*.pkl"):
         username = filepath.name.split(".")[0]
         user_models[username] = joblib.load(filepath.resolve())
 
     return user_models
 
 
-def check_event_using_predictor(user_models: dict, event: Event) -> list[str]:
+def check_event_using_predictor(user_predictors: dict[str, KMeans], event: Event) -> list[str]:
     
-    test_example = create_time_column([event.time])
-
-    user_model = user_models.get(event.user)
-    if not user_model:
-        print(f"No model found for user {event.user}")
+    user_model: KMeans | None = user_predictors.get(event.user)
+    if user_model is None:
         return []
+
+    test_example = create_time_column([event.time])
 
     # the idea is to compute the distance of the event from the closest centroid
     distances = user_model.transform(test_example)[0]
-    min_distance = np.min(distances)
-    percentage = (min_distance / 2)
+    closest_cluster_id = np.argmin(distances)
+    closest_centroid = user_model.cluster_centers_[closest_cluster_id]
+    sin_val, cos_val = closest_centroid[0], closest_centroid[1]
+    centroid_in_minutes = sincos_to_minutes(sin_val, cos_val)
 
-    if percentage < 0.25:
+    # get the time difference (in minutes) between centroid and the event time
+    diff = abs(centroid_in_minutes - event.time)
+    # handle wrap-around:
+    #   ex. the difference between 0 and 60 (1AM) is 60 m.
+    #   the difference between 0 and 1380 (11PM) should be 60m,
+    #    but without the following wrap, it would be 1380m (11 hours), wrongly. 
+    diff = min(diff, 1440 - diff)
+
+    # if time difference is within the agreed "normal" threshold, return no anomaly
+    if diff <= NORMAL_ACCESS_TIME_THRESHOLD_MINUTES:
         return []
-
-    return [f"Distance to closest centroid: {min_distance:.4f} ({percentage:.2f}% of max possible)"]
+    # ...otherwise...
+    return [f"time of activity is {diff} minutes off the"
+            f" closest average time of activity for user '{event.user}'"
+            f" ({minutes_to_hhmm(centroid_in_minutes)})"]
