@@ -23,6 +23,7 @@ from .learning import (
 from . import manifesto as Manifesto
 
 MAX_ITERATIONS = 15
+MINIMUM_NUMBER_OF_EXAMPLES = 100
 
 def _process_suspicious_events(
         queue: deque[SuspiciousEvent],
@@ -152,7 +153,7 @@ def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False
                 # combine the anomalies
                 anomalies =  inferred_anomalies + predicted_anomalies
                 # if anomalies are found, add the event to the sus_events list;
-                #   otherwise add it to the normal events list
+                #   otherwise add the event to the list of normal events
                 if anomalies:
                     sus_events.append(
                         SuspiciousEvent(
@@ -169,7 +170,7 @@ def monitor_manifesto(prolog: Prolog, predictors: dict, debug_mode: bool = False
         _serialize_event_examples(normal_events)
 
         if not has_hit_max_iterations:
-                print("(!) ITERATION COMPLETED (!)\n")
+            print("(!) ITERATION COMPLETED (!)\n")
 
         print("Press Enter to continue, or 'B' to go back.")
 
@@ -180,10 +181,14 @@ def train():
     event_examples = parse_events_from_csv(EVENT_EXAMPLES_PATH)
 
     events_size = len(event_examples)
+
     if events_size < 1:
         print("No past events found!")
-    elif events_size < 100:
-        print(f"There are just {events_size} events in past data. Wait for at least 100")
+
+    elif events_size < MINIMUM_NUMBER_OF_EXAMPLES:
+        print(f"There are just {events_size} events in past data."
+              f" Wait for at least {MINIMUM_NUMBER_OF_EXAMPLES} examples.")
+
     else:
         print("Starting training...")
         learn_users_time_patterns(event_examples)
