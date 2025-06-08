@@ -20,11 +20,11 @@ _users = [
     User(
         name='bob',
         is_super=False,
-        time_ranges=[range(450, 700), range(840, 1000), range(1200, 1250)]),
+        time_ranges=[range(450, 700), range(950, 1100), range(1200, 1260)]),
     User(
         name='eve',
         is_super=False,
-        time_ranges=[range(450, 700), range(900, 1000), range(0, 120)]),
+        time_ranges=[range(450, 600), range(900, 1000), range(0, 60)]),
     User(
         name='carol',
         is_super=False,
@@ -33,12 +33,12 @@ _users = [
     User(
         name='root',
         is_super=True,
-        time_ranges=[range(0, 1440)]
+        time_ranges=[range(420, 760)]
     ),
     User(
         name='admin',
         is_super=True,
-        time_ranges=[range(0, 1440)]
+        time_ranges=[range(800, 1000)]
     ),
 ]
 
@@ -59,9 +59,9 @@ def _minutes_from_datetime(dt: datetime) -> int:
 
 def _pick_next_super_user_action():
     perc = random.random()
-    if perc < 0.01:
+    if perc < 0.05:
         return UserAction.LOGIN
-    elif perc < 0.30:
+    elif perc < 0.40:
         return UserAction.LOGOUT
     elif perc < 0.80:
         return UserAction.EDIT
@@ -71,11 +71,11 @@ def _pick_next_super_user_action():
 
 def _pick_next_unpriviledged_user_action():
     perc = random.random()
-    if perc < 0.01:
+    if perc < 0.1:
         return UserAction.LOGIN
-    elif perc < 0.06:
+    elif perc < 0.15:
         return UserAction.EDIT
-    elif perc < 0.50:
+    elif perc < 0.6:
         return UserAction.LOGOUT
     else:
         return UserAction.NONE
@@ -96,9 +96,10 @@ def _generate_user_session(
     tot_min_elapsed = 0
     cur_action = UserAction.LOGIN
     first_iteration = True
-    while cur_action != UserAction.LOGOUT:
+    stop = False
+    while not stop:
         
-        tot_min_elapsed += random.randint(0, 120)
+        tot_min_elapsed += random.randint(15, 60)
         
         if first_iteration:
             first_iteration = False
@@ -115,6 +116,11 @@ def _generate_user_session(
             time=_minutes_from_datetime(cur_datetime),
             user=user,
             action=cur_action))
+        
+        # if the current action is logout, add a chance that if fails
+        #  (so it triggers the "double login" rule)
+        if cur_action != UserAction.LOGOUT:
+            stop = True if random.random() > 0.5 else False
 
     return (events, tot_min_elapsed)
 
@@ -133,12 +139,13 @@ def get_next_events(
     total_minutes_elapsed = 0
     for user in _users:
 
-        # TODO use ranges
-        is_their_timerange = any(minutes_past_midnight in r for r in user.time_ranges)
+        is_their_timerange = any(minutes_past_midnight in timerange for timerange in user.time_ranges)
+
+        if debug:
+            print(f"{user.name}, time: {minutes_past_midnight}, their timerange: {is_their_timerange}")
 
         if is_their_timerange:
-            # superusers are thought to be less active than unpriviledged users 
-            chance_of_inactivity = 0.4 if user.is_super else 0.2
+            chance_of_inactivity = 0.5
         elif is_nighttime:
             chance_of_inactivity = 0.9
         else:
