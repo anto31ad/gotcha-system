@@ -33,7 +33,7 @@ edit_from_unauthorized_user(User) :-
     unprocessed_event(_, _, User, edit),
     \+ super_user(User).
 
-edit_from_offline_user(User) :-
+edit_after_logout(User) :-
     unprocessed_event(_,_, User, edit),
     \+ online_user(User).
 
@@ -50,8 +50,8 @@ anomaly(edit_night_time, Time) :-
 anomaly(edit_from_unauthorized_user, User) :-
     edit_from_unauthorized_user(User).
 
-anomaly(edit_from_offline_user, User) :-
-    edit_from_offline_user(User).
+anomaly(edit_after_logout, User) :-
+    edit_after_logout(User).
 
 anomaly(superuser_login_at_night_time, (User, Time)) :-
     superuser_login_at_night_time(User, Time).
