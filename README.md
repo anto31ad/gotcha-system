@@ -52,23 +52,14 @@ pip install -r requirements.txt
 
 ## Usage
 
-Make sure you entered the virtual environment you have created earlier with the required packages installed.
-
-Now:
-
-1. Generate fake data by executing
-
-```python
-python -m scripts.genlog
-```
-
-2. Run the main script
+1. Make sure you entered the virtual environment you have created earlier with the required packages installed.
+2. Then run the main script:
 
 ```python
 python -m app.main
 ```
 
-3. Unfortunately, that is all there is to see for now!
+3. Have fun playing around!
 
 
 ## Other docs
