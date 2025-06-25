@@ -42,7 +42,7 @@ def calculate_optimal_k_for_kmeans(
     # inertia (of a kmeans model) is the sum of the squared distances
     #   of each example E (of the training set) to the closest centroid
     # inertia_points will store the intertia of each model
-    intertia_points = []
+    inertia_points = []
     
     range_k = range(min_clusters, max_clusters)
     for i in range_k:
@@ -53,11 +53,11 @@ def calculate_optimal_k_for_kmeans(
             init='random',
         )
         model.fit(data)
-        intertia_points.append(model.inertia_)
+        inertia_points.append(model.inertia_)
 
     kneeloc = KneeLocator(
         x=range_k,
-        y=intertia_points,
+        y=inertia_points,
         curve='convex',         # convex to detect elbows
         direction='decreasing', # intertia decreases as k grows
     )
@@ -65,7 +65,7 @@ def calculate_optimal_k_for_kmeans(
     # plot the curve and write the plot to file (for debugging)
     if plot_path:
         plt.figure()
-        plt.plot(list(range_k), intertia_points, 'bo-')
+        plt.plot(list(range_k), inertia_points, 'bo-')
         if kneeloc.elbow is not None:
             plt.vlines(
                 kneeloc.elbow,
